@@ -50,6 +50,7 @@ export default function AddReportScreen() {
   const [isMapModalVisible, setMapModalVisible] = useState(false);
   const [mapType, setMapType] = useState<"standard" | "satellite">("standard");
   const [imageUris, setImageUris] = useState<string[]>([]);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
   useEffect(() => {
     requestLocation();
@@ -73,14 +74,16 @@ export default function AddReportScreen() {
     }
   }
 
-  async function pickImage() {
+  function openPhotoOptions() {
     if (imageUris.length >= MAX_REPORT_IMAGES) {
-      Alert.alert(
-        "Limit reached",
-        `You can upload up to ${MAX_REPORT_IMAGES} photos.`,
-      );
+      Alert.alert("Limit reached", `You can upload up to ${MAX_REPORT_IMAGES} photos.`);
       return;
     }
+    setShowPhotoOptions(true);
+  }
+
+  async function pickImage() {
+    setShowPhotoOptions(false);
     const remaining = MAX_REPORT_IMAGES - imageUris.length;
     const allowMultiple = remaining > 1;
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -96,6 +99,25 @@ export default function AddReportScreen() {
         const next = [...prev, ...picked];
         return next.slice(0, MAX_REPORT_IMAGES);
       });
+    }
+  }
+
+  async function takePhoto() {
+    setShowPhotoOptions(false);
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Camera access is required to take a photo.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUris((prev) =>
+        [...prev, result.assets[0].uri].slice(0, MAX_REPORT_IMAGES)
+      );
     }
   }
 
@@ -128,7 +150,7 @@ export default function AddReportScreen() {
       );
     }
 
-    const { error } = await supabase.from("reports").insert({
+    const { data: inserted, error } = await supabase.from("reports").insert({
       user_id: session?.user?.id,
       type,
       category,
@@ -140,13 +162,30 @@ export default function AddReportScreen() {
       longitude: coordinate.longitude,
       image_url: uploadedImageUrls[0] || null,
       image_urls: uploadedImageUrls,
-    });
+    }).select('id').single();
 
     setLoading(false);
     if (error)
       Alert.alert("Error", "Failed to create report: " + error.message);
     else {
+      // Navigate immediately — notification fires in the background
       router.push("/(tabs)");
+
+      // Non-blocking: notify owners of nearby active reports
+      if (inserted?.id) {
+        supabase.functions
+          .invoke('notify-nearby', {
+            body: {
+              report_id: inserted.id,
+              latitude: coordinate.latitude,
+              longitude: coordinate.longitude,
+              item_name: itemName,
+              type,
+              user_id: session?.user?.id,
+            },
+          })
+          .catch((err) => console.log('notify-nearby error:', err));
+      }
     }
   }
 
@@ -233,7 +272,7 @@ export default function AddReportScreen() {
           <Typography variant="label">Photo (Optional)</Typography>
           <View style={styles.uploadArea}>
             {imageUris.length === 0 ? (
-              <TouchableOpacity style={styles.uploadEmpty} onPress={pickImage}>
+              <TouchableOpacity style={styles.uploadEmpty} onPress={openPhotoOptions}>
                 <Ionicons name="camera-outline" size={32} color="#adaaaa" />
                 <Typography variant="small">Tap to add a photo</Typography>
               </TouchableOpacity>
@@ -255,7 +294,7 @@ export default function AddReportScreen() {
                   </View>
                 ))}
                 {imageUris.length < MAX_REPORT_IMAGES && (
-                  <TouchableOpacity style={styles.addTile} onPress={pickImage}>
+                  <TouchableOpacity style={styles.addTile} onPress={openPhotoOptions}>
                     <Ionicons name="add" size={24} color="#b6a0ff" />
                     <Typography variant="small" style={styles.addTileText}>
                       Add
@@ -290,6 +329,59 @@ export default function AddReportScreen() {
         setMapType={setMapType}
         type={type}
       />
+
+      {/* ── Photo source action sheet ── */}
+      <Modal
+        visible={showPhotoOptions}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPhotoOptions(false)}
+      >
+        <TouchableOpacity
+          style={styles.actionSheetBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowPhotoOptions(false)}
+        />
+        <View style={styles.actionSheet}>
+          <View style={styles.actionSheetHandle} />
+
+          <Typography variant="h3" style={styles.actionSheetTitle}>Add Photo</Typography>
+          <Typography variant="small" style={styles.actionSheetSubtitle}>
+            Choose how you'd like to add a photo
+          </Typography>
+
+          <TouchableOpacity style={styles.actionSheetBtn} onPress={takePhoto}>
+            <View style={styles.actionSheetIconWrap}>
+              <Ionicons name="camera" size={22} color="#b6a0ff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Typography weight="bold">Take a Photo</Typography>
+              <Typography variant="small" color="#adaaaa">Open the camera</Typography>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#484847" />
+          </TouchableOpacity>
+
+          <View style={styles.actionSheetDivider} />
+
+          <TouchableOpacity style={styles.actionSheetBtn} onPress={pickImage}>
+            <View style={styles.actionSheetIconWrap}>
+              <Ionicons name="images" size={22} color="#b6a0ff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Typography weight="bold">Choose from Library</Typography>
+              <Typography variant="small" color="#adaaaa">Select from your gallery</Typography>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#484847" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionSheetCancel}
+            onPress={() => setShowPhotoOptions(false)}
+          >
+            <Typography color="#ff716b" weight="bold">Cancel</Typography>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -530,5 +622,67 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: "#3fff8b",
+  },
+
+  // Photo action sheet
+  actionSheetBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  actionSheet: {
+    backgroundColor: "#131313",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    paddingTop: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+    borderBottomWidth: 0,
+  },
+  actionSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#484847",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  actionSheetTitle: {
+    marginBottom: 4,
+  },
+  actionSheetSubtitle: {
+    color: "#adaaaa",
+    marginBottom: 24,
+  },
+  actionSheetBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    gap: 16,
+  },
+  actionSheetIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(182, 160, 255, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(182, 160, 255, 0.2)",
+  },
+  actionSheetDivider: {
+    height: 1,
+    backgroundColor: "#1e1e1e",
+    marginVertical: 4,
+  },
+  actionSheetCancel: {
+    marginTop: 20,
+    alignItems: "center",
+    paddingVertical: 14,
+    backgroundColor: "rgba(255, 113, 107, 0.08)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 113, 107, 0.2)",
   },
 });

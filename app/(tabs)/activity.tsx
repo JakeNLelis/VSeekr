@@ -49,7 +49,8 @@ export default function ActivityScreen() {
           reports (
             id,
             item_name,
-            status
+            status,
+            type
           )
         `,
         )
@@ -109,26 +110,39 @@ export default function ActivityScreen() {
             const report = act.reports;
             if (!report) return null;
 
+            const isNearby = act.action_type === 'nearby_report';
+
             return (
               <TouchableOpacity
                 key={act.id}
                 style={[styles.activityCard, styles.activityCardUnread]}
                 onPress={() => navigateToReport(report.id)}
               >
-                <View style={styles.iconContainerPrimary}>
+                <View style={[styles.iconContainerPrimary, isNearby && styles.iconContainerNearby]}>
                   <Ionicons
-                    name="chatbubble-ellipses"
+                    name={isNearby ? 'location' : 'chatbubble-ellipses'}
                     size={20}
-                    color="#b6a0ff"
+                    color={isNearby ? '#3fff8b' : '#b6a0ff'}
                   />
                 </View>
                 <View style={styles.cardContent}>
-                  <Text style={styles.activityText}>
-                    A user{" "}
-                    <Text style={styles.boldText}>{act.action_type}</Text> on
-                    your {report.status} report{" "}
-                    <Text style={styles.boldText}>{report.item_name}</Text>
-                  </Text>
+                  {isNearby ? (
+                    <Text style={styles.activityText}>
+                      A new{' '}
+                      <Text style={styles.boldText}>
+                        {report.type === 'lost' ? 'Lost' : 'Found'}
+                      </Text>{' '}report for{' '}
+                      <Text style={styles.boldText}>{report.item_name}</Text>
+                      {' '}was posted near your area
+                    </Text>
+                  ) : (
+                    <Text style={styles.activityText}>
+                      A user{' '}
+                      <Text style={styles.boldText}>{act.action_type}</Text> on
+                      your {report.status} report{' '}
+                      <Text style={styles.boldText}>{report.item_name}</Text>
+                    </Text>
+                  )}
                   <Text style={styles.timeText}>{timeAgo(act.created_at)}</Text>
                 </View>
               </TouchableOpacity>
@@ -194,6 +208,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
+  },
+  iconContainerNearby: {
+    backgroundColor: "rgba(63, 255, 139, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(63, 255, 139, 0.2)",
   },
   cardContent: {
     flex: 1,
