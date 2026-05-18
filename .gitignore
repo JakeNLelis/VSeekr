@@ -46,3 +46,4 @@ app-example
 .agents/
 .stitch/
 .vscode/
+/architecture-diagram/

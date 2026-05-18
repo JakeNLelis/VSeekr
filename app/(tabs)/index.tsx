@@ -52,11 +52,37 @@ export default function MapScreen() {
   useEffect(() => {
     fetchReports();
     requestLocation();
+
+    // Setup Supabase Realtime WebSocket subscription
     const channel = supabase
       .channel('map-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => fetchReports())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reports' }, (payload) => {
+        if (payload.new.status === 'active') {
+          setReports(prev => [...prev, payload.new]);
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reports' }, (payload) => {
+        setReports(prev => {
+          // If a report is no longer active, remove it from the map
+          if (payload.new.status !== 'active') {
+            return prev.filter(r => r.id !== payload.new.id);
+          }
+          // If it exists, update it. If not, add it.
+          const exists = prev.some(r => r.id === payload.new.id);
+          if (exists) {
+            return prev.map(r => r.id === payload.new.id ? payload.new : r);
+          }
+          return [...prev, payload.new];
+        });
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'reports' }, (payload) => {
+        setReports(prev => prev.filter(r => r.id !== payload.old.id));
+      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    return () => { 
+      supabase.removeChannel(channel); 
+    };
   }, []);
 
   async function fetchReports() {
