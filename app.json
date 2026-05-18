@@ -4,7 +4,7 @@
     "slug": "vseekr",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo_nobg.png",
     "scheme": "vseekr",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,23 +14,32 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/logo_nobg.png",
+        "backgroundImage": "./assets/images/android_background.png",
+        "monochromeImage": "./assets/images/android_background.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAfqbtth5vCEyE7fJlcX6vR1POnAkHu1fk"
+        }
+      },
+      "package": "com.jakelelis.vseekr",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logo_with_whitebg.png"
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
+      "./plugins/withNativePatches",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/logo_with_whitebg.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -43,6 +52,15 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "45594824-0c95-4b83-b75f-41a3a806868b"
+      }
+    },
+    "owner": "jake-lelis"
   }
 }

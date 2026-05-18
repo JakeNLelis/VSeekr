@@ -1,0 +1,4 @@
+app/(tabs)/_layout.tsx(5,27): error TS2307: Cannot find module '@/components/haptic-tab' or its corresponding type declarations.
+app/_layout.tsx(6,32): error TS2307: Cannot find module '@/hooks/use-color-scheme' or its corresponding type declarations.
+app/modal.tsx(4,28): error TS2307: Cannot find module '@/components/themed-text' or its corresponding type declarations.
+app/modal.tsx(5,28): error TS2307: Cannot find module '@/components/themed-view' or its corresponding type declarations.

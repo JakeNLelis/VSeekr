@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "627296608808",
+    "project_id": "vseekr",
+    "storage_bucket": "vseekr.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:627296608808:android:f82ee41d473abca7aa8b1d",
+        "android_client_info": {
+          "package_name": "com.jakelelis.vseekr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBk7FZBeoIH00FY6fuhmdWZzr-d54TyrDA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
