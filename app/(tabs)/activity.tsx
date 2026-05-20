@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -67,11 +68,62 @@ export default function ActivityScreen() {
     }
   }, [user]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchActivities();
+      }
+    }, [user, fetchActivities])
+  );
+
   useEffect(() => {
-    if (user) {
-      fetchActivities();
-    }
-  }, [user, fetchActivities]);
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`activities-realtime-feed-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "activities",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          try {
+            const { data, error } = await supabase
+              .from("activities")
+              .select(
+                `
+                *,
+                reports (
+                  id,
+                  item_name,
+                  status,
+                  type
+                )
+              `,
+              )
+              .eq("id", payload.new.id)
+              .single();
+
+            if (!error && data) {
+              setActivities((prev) => {
+                if (prev.some((a) => a.id === data.id)) return prev;
+                return [data, ...prev];
+              });
+            }
+          } catch (err) {
+            console.log("Error handling real-time activity:", err);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

@@ -48,9 +48,9 @@ export default function ReportDetailsScreen() {
   const [contactProfile, setContactProfile] = useState<any>(null);
   const [closing, setClosing] = useState(false);
 
-  const fetchReportAndComments = useCallback(async () => {
+  const fetchReportAndComments = useCallback(async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const { data: reportData } = await supabase
         .from("reports")
         .select("*")
@@ -78,46 +78,70 @@ export default function ReportDetailsScreen() {
     } catch (err: any) {
       Alert.alert("Error", err.message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
-    if (id) fetchReportAndComments();
+    if (id) fetchReportAndComments(true);
   }, [id, fetchReportAndComments]);
 
   const handlePostComment = async () => {
-    if (!newComment.trim() || !session?.user) return;
+    const commentText = newComment.trim();
+    if (!commentText || !session?.user) return;
+
+    // Optimistic Update: Add comment instantly to the UI
+    const tempId = `temp-${Date.now()}`;
+    const optimisticComment = {
+      id: tempId,
+      report_id: id,
+      user_id: session.user.id,
+      content: commentText,
+      created_at: new Date().toISOString(),
+    };
+
+    setComments((prev) => [...prev, optimisticComment]);
+    setNewComment("");
+
     try {
       setSending(true);
       const { error } = await supabase.from("comments").insert({
         report_id: id,
         user_id: session.user.id,
-        content: newComment.trim(),
+        content: commentText,
       });
       if (error) throw error;
 
       if (report?.user_id && report.user_id !== session.user.id) {
-        await supabase.from("activities").insert({
+        // Run activities logging in the background
+        supabase.from("activities").insert({
           user_id: report.user_id,
           target_report_id: id,
           action_type: "commented",
+        }).then(({ error: actError }) => {
+          if (actError) console.log("Error inserting activity:", actError.message);
         });
 
-        await supabase.functions.invoke("send-push", {
+        // Trigger push notifications in the background
+        supabase.functions.invoke("send-push", {
           body: {
             user_id: report.user_id,
             title: "New comment",
             body: `${session?.user?.user_metadata?.username || "Someone"} commented on your report`,
             data: { route: `/details/${id}` },
           },
+        }).then(({ error: pushError }) => {
+          if (pushError) console.log("Error invoking push notification:", pushError.message);
         });
       }
 
-      setNewComment("");
-      fetchReportAndComments();
+      // Re-fetch correct timestamp/id in the background
+      await fetchReportAndComments(false);
     } catch (err: any) {
       Alert.alert("Error", err.message);
+      // Rollback optimistic update on failure
+      setComments((prev) => prev.filter((c) => c.id !== tempId));
+      setNewComment(commentText);
     } finally {
       setSending(false);
     }
