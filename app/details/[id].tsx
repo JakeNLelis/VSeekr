@@ -15,11 +15,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "../../components/Map";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import MapView, { Marker, PROVIDER_GOOGLE } from "../../components/Map";
 
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -48,39 +48,42 @@ export default function ReportDetailsScreen() {
   const [contactProfile, setContactProfile] = useState<any>(null);
   const [closing, setClosing] = useState(false);
 
-  const fetchReportAndComments = useCallback(async (showLoading = false) => {
-    try {
-      if (showLoading) setLoading(true);
-      const { data: reportData } = await supabase
-        .from("reports")
-        .select("*")
-        .eq("id", id)
-        .single();
-      setReport(reportData);
-
-      if (reportData?.user_id) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("contact_name, contact_phone, contact_email")
-          .eq("id", reportData.user_id)
+  const fetchReportAndComments = useCallback(
+    async (showLoading = false) => {
+      try {
+        if (showLoading) setLoading(true);
+        const { data: reportData } = await supabase
+          .from("reports")
+          .select("*")
+          .eq("id", id)
           .single();
-        setContactProfile(profileData || null);
-      } else {
-        setContactProfile(null);
-      }
+        setReport(reportData);
 
-      const { data: commentsData } = await supabase
-        .from("comments")
-        .select("*")
-        .eq("report_id", id)
-        .order("created_at", { ascending: true });
-      setComments(commentsData || []);
-    } catch (err: any) {
-      Alert.alert("Error", err.message);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  }, [id]);
+        if (reportData?.user_id) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("contact_name, contact_phone, contact_email")
+            .eq("id", reportData.user_id)
+            .single();
+          setContactProfile(profileData || null);
+        } else {
+          setContactProfile(null);
+        }
+
+        const { data: commentsData } = await supabase
+          .from("comments")
+          .select("*")
+          .eq("report_id", id)
+          .order("created_at", { ascending: true });
+        setComments(commentsData || []);
+      } catch (err: any) {
+        Alert.alert("Error", err.message);
+      } finally {
+        if (showLoading) setLoading(false);
+      }
+    },
+    [id],
+  );
 
   useEffect(() => {
     if (id) fetchReportAndComments(true);
@@ -114,25 +117,35 @@ export default function ReportDetailsScreen() {
 
       if (report?.user_id && report.user_id !== session.user.id) {
         // Run activities logging in the background
-        supabase.from("activities").insert({
-          user_id: report.user_id,
-          target_report_id: id,
-          action_type: "commented",
-        }).then(({ error: actError }) => {
-          if (actError) console.log("Error inserting activity:", actError.message);
-        });
+        supabase
+          .from("activities")
+          .insert({
+            user_id: report.user_id,
+            target_report_id: id,
+            action_type: "commented",
+          })
+          .then(({ error: actError }) => {
+            if (actError)
+              console.log("Error inserting activity:", actError.message);
+          });
 
         // Trigger push notifications in the background
-        supabase.functions.invoke("send-push", {
-          body: {
-            user_id: report.user_id,
-            title: "New comment",
-            body: `${session?.user?.user_metadata?.username || "Someone"} commented on your report`,
-            data: { route: `/details/${id}` },
-          },
-        }).then(({ error: pushError }) => {
-          if (pushError) console.log("Error invoking push notification:", pushError.message);
-        });
+        supabase.functions
+          .invoke("send-push", {
+            body: {
+              user_id: report.user_id,
+              title: "New comment",
+              body: `${session?.user?.user_metadata?.username || "Someone"} commented on your report`,
+              data: { route: `/details/${id}` },
+            },
+          })
+          .then(({ error: pushError }) => {
+            if (pushError)
+              console.log(
+                "Error invoking push notification:",
+                pushError.message,
+              );
+          });
       }
 
       // Re-fetch correct timestamp/id in the background
@@ -152,14 +165,14 @@ export default function ReportDetailsScreen() {
     setClosing(true);
     const { error } = await supabase
       .from("reports")
-      .update({ status: "closed" })
+      .update({ status: "resolved" })
       .eq("id", report.id);
     setClosing(false);
     if (error) {
       Alert.alert("Error", error.message);
       return;
     }
-    setReport((prev: any) => ({ ...prev, status: "closed" }));
+    setReport((prev: any) => ({ ...prev, status: "resolved" }));
   };
 
   if (loading || !report) {
@@ -181,7 +194,7 @@ export default function ReportDetailsScreen() {
 
   const carouselWidth = Dimensions.get("window").width;
   const isOwner = report?.user_id && report.user_id === session?.user?.id;
-  const isClosed = report?.status === "closed";
+  const isClosed = report?.status === "resolved";
   const displayName =
     report?.type === "found"
       ? contactProfile?.contact_name || "Finder"
@@ -248,7 +261,7 @@ export default function ReportDetailsScreen() {
                   color="#ffb86b"
                   style={styles.closedText}
                 >
-                  Closed
+                  Resolved
                 </Typography>
               )}
             </LinearGradient>
@@ -296,11 +309,11 @@ export default function ReportDetailsScreen() {
               <Card style={{ marginBottom: 24 }}>
                 <Typography variant="label">Report Status</Typography>
                 <Typography variant="body" color="#adaaaa">
-                  {isClosed ? "Closed" : "Active"}
+                  {isClosed ? "Resolved" : "Active"}
                 </Typography>
                 {!isClosed && (
                   <Button
-                    title="Mark as Closed"
+                    title="Mark as Resolved"
                     onPress={handleCloseReport}
                     loading={closing}
                     variant="outline"
