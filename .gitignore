@@ -47,3 +47,5 @@ app-example
 .stitch/
 .vscode/
 /architecture-diagram/
+
+.vscode/

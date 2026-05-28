@@ -1,193 +1,237 @@
 # VSeekr 🔍
 
-A community-driven **lost & found mobile app** for campuses and local communities. VSeekr helps people report lost or found items on an interactive map, connect with finders, and get notified in real time — all within a sleek dark-mode interface.
+A premium, community-driven **lost and found mobile application** designed for campuses and local communities. VSeekr empowers individuals to report lost or found items on a fully interactive map, coordinate with finders in real time, and receive instant push notifications — all inside a stunning, modern dark-mode experience.
 
 Built with **Expo (React Native)** and powered by **Supabase**.
 
 ---
 
-## Features
+## 📸 Screenshots & Media
 
-### 🔐 Authentication
-- **Sign Up** — register with a username, email, and password
-- **Sign In** — email + password login with show/hide password toggle
-- **Forgot Password** — receive a deep-link reset email back into the app
-- **Update Password** — reached from the reset email link
-- Session persists across app restarts and auto-refreshes in the foreground
-- Logout triggers an immediate redirect to the login screen
-- **Delete Account** — permanently removes the account via a database function
-- All protected routes (tabs, report details) redirect unauthenticated users to login
+<p align="center">
+  <img src="./assets/screenshots/VSeekr.png" width="220" alt="VSeekr Brand Logo" />
+</p>
 
----
-
-### 🗺️ Map Screen
-- Full-screen **Google Maps** with live user location
-- Custom colored pins per report type — 🔴 Lost, 🟢 Found
-- Tap a pin's callout to navigate to the full report details
-- Collapsible **bottom sheet** listing up to 5 nearby reports
-- Standard ↔ Satellite map type toggle
-- **Search bar** — filters by item name, description, or location name
-- **Type filter** — All / Lost / Found
-- **Category filter** — Electronics, Pets, Keys, Wallets/Cards, Apparel, Other
-- Map pins and results update **in real time** via Supabase Realtime
+<p align="center">
+  <img src="./assets/screenshots/1.png" width="42%" alt="VSeekr Map View" />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./assets/screenshots/2.png" width="42%" alt="VSeekr Details/Feed" />
+</p>
 
 ---
 
-### 📋 Feed Screen
-- Chronological list of all active reports, newest first
-- Each card shows: item name, lost/found badge, location, description snippet, thumbnail image, and relative timestamp
-- Same search + type + category filter system as the Map screen
-- Feed refreshes **automatically** via Supabase Realtime — no manual reload needed
+## 🚀 Features
+
+### 🗺️ Interactive Maps
+* **Live Google Maps:** Pins are color-coded based on report type: 🔴 **Lost** and 🟢 **Found**.
+* **Precise Location Picker:** Select custom coordinates via an interactive map modal when creating a report.
+* **Proximity Map Feed:** A sliding bottom sheet that lists items near you immediately.
+* **Map & Search Filters:** Filter items dynamically by keywords, map views, type, and categories (Electronics, Apparel, Pets, etc.).
+
+### 💬 Instant Real-Time Comments
+* **Chat-Style Bubbles:** Sleek bubbles with distinct visual styles differentiating your comments from others.
+* **Optimistic UI Updates:** Comments appear **instantly** when sent. Network operations, RLS logs, and push notification dispatches run silently in the background, offering zero-lag UX.
+* **Fail-Safe Rollback:** Automatic text recovery in the input bar if network transactions fail.
+
+### 🔔 Activity Screen & Real-Time Sync
+* **Interactive Logs:** Displays notifications for activities on your own items (such as "Someone commented on your report").
+* **Push Notifications:** Deep integration with Expo Push Notification Service.
+* **In-App Toasts:** Slides down instantly in the foreground to notify you of activity updates across tabs.
+* **Direct Deep Linking:** Tap any local toast or system-level notification to navigate instantly to the target report details screen.
+
+### 👤 Profile & User Customization
+* **Contact Information:** Store and update your default name, email, and phone number to automatically share with others when you post a **Found** item.
+* **Personal Statistics:** Track active lost/found items submitted.
 
 ---
 
-### ➕ New Report Screen
-- Choose **Lost** or **Found** as the report type
-- Fill in item name, category, and description
-- Open an interactive **map modal** to drop a pin at the exact GPS location
-- Add an optional text description of the location
-- Upload **up to 5 photos** from the device gallery (multi-select supported)
-- Photos are uploaded to Supabase Storage; URLs are stored with the report
+## 🛠️ Tech Stack
 
----
-
-### 📄 Report Details Screen
-- Swipeable **image carousel** with dot indicators
-- Finder **contact card** (name, phone, email) — shown on Found reports
-- Embedded **mini-map** showing the exact pin location
-- Full description and status badge (Active / Closed)
-- **Mark as Closed** — visible only to the report's owner while active
-- **Comments section** — threaded chat-style bubbles (own vs. others)
-- Sticky **comment input bar** at the bottom of the screen
-- Posting a comment triggers:
-  1. An activity log entry for the report owner
-  2. A **push notification** sent to the owner via a Supabase Edge Function
-
----
-
-### 🔔 Activity Screen
-- Personal activity feed showing events on your own reports (e.g. "someone commented")
-- Tap any activity card to navigate directly to the linked report
-- Pull-to-refresh supported
-
----
-
-### 👤 Profile Screen
-- Avatar, username, and email display
-- Stats card showing total Lost and Found reports submitted
-- Editable **contact details** (name, phone, email) — shown to others on your Found reports
-- Log Out and Delete Account actions
-
----
-
-### 🔔 Push Notifications
-- Expo Push Token registered on login and stored in the user's profile
-- **In-app toast** slides down from the top when a new activity arrives (via Supabase Realtime)
-- **Native push notification** sent through a Supabase Edge Function when someone comments on your report
-- Tapping a native notification deep-links directly to the relevant report
-
----
-
-### 🛡️ Security
-- Row Level Security (RLS) enabled on all database tables
-- The `anon` role has **zero access** — only authenticated JWT sessions can read or write data
-- Write policies are scoped to the row owner (`auth.uid() = user_id`)
-
-| Table | Unauthenticated | Authenticated |
-|---|---|---|
-| `reports` | ❌ | ✅ SELECT all active; INSERT/UPDATE own |
-| `comments` | ❌ | ✅ SELECT all; INSERT own |
-| `activities` | ❌ | ✅ SELECT own; INSERT own |
-| `profiles` | ❌ | ✅ SELECT all; INSERT/UPDATE own |
-| `users` | ❌ | ✅ SELECT all; UPDATE own |
-
----
-
-## Tech Stack
-
-| Concern | Technology |
+| Domain | Technology |
 |---|---|
-| Framework | Expo SDK 54 / React Native 0.81 |
-| Navigation | Expo Router v6 (file-based routing) |
-| Backend | Supabase (Postgres, Auth, Storage, Realtime, Edge Functions) |
-| Maps | `react-native-maps` with Google Maps provider |
-| Auth persistence | `@react-native-async-storage/async-storage` |
-| Animations | `react-native-reanimated` v4 + `react-native-worklets` |
-| Gestures | `react-native-gesture-handler` |
-| Notifications | `expo-notifications` + Expo Push Service |
-| Location | `expo-location` |
-| Image picker | `expo-image-picker` |
-| Deep linking | `expo-linking` with the `vseekr://` scheme |
-| Architecture | New Architecture enabled (`newArchEnabled: true`) |
+| **Core Framework** | Expo SDK 54 / React Native 0.81 (New Architecture Enabled) |
+| **Routing & Navigation** | Expo Router v6 (File-based navigation) |
+| **Backend & Database** | Supabase (Postgres, Realtime engine, JWT Auth, Object Storage) |
+| **Serverless Integration** | Supabase Edge Functions (Deno Deploy) |
+| **Maps & Geolocations** | `react-native-maps` with Google Maps SDK |
+| **Push Notifications** | `expo-notifications` + Expo Push Notification service |
+| **Local Persistence** | `@react-native-async-storage/async-storage` |
+| **Interface Styling** | Premium HSL tailormade colors, Glassmorphism, and Outfit Typography |
 
 ---
 
-## Getting Started
+## 📂 Project Structure
+
+```text
+vseekr/
+├── .expo/                   # Expo local build cache
+├── app/                     # File-based router folder (Expo Router)
+│   ├── _layout.tsx          # Root entry point, providers, safe areas, navigation root
+│   ├── index.tsx            # Navigation gateway / Session validator redirect
+│   ├── (auth)/              # Authentication Stack
+│   │   ├── login.tsx        # Sign In Screen
+│   │   ├── register.tsx     # Sign Up Screen
+│   │   ├── forgot-password.tsx  # Request password reset screen
+│   │   └── update-password.tsx  # Set new password screen
+│   ├── (tabs)/              # Core Application Bottom Tabs
+│   │   ├── index.tsx        # Map View & Bottom Sheet List Screen
+│   │   ├── feed.tsx         # Chronological list scroll-feed
+│   │   ├── index.tsx        # Create report screen
+│   │   ├── activity.tsx     # Notifications feed
+│   │   └── profile.tsx      # User statistics & profile editor
+│   └── details/
+│       └── [id].tsx         # Dynamic report detail with map, details, and comments
+├── assets/
+│   └── images/              # Cleaned active logos and icons
+├── components/              # Shared Layout & Design System Components
+│   ├── Map.tsx              # Geolocations native Google Map wrapper
+│   ├── ReportItem.tsx       # Reusable report list-card
+│   └── ui/                  # Atom-level UI (Button, Card, Typography, etc.)
+├── lib/                     # Global Libraries and Context Hooks
+│   ├── supabase.ts          # Supabase client instantiation
+│   ├── AuthProvider.tsx     # Active session context provider
+│   ├── NotificationProvider.tsx  # In-app toasts & Native push notifications listener
+│   └── constants.ts         # Categories & system constants
+└── supabase/                # Live Database Configuration
+    └── functions/           # Deno Edge Functions
+        └── send-push/       # Push Notification dispatcher script
+```
+
+---
+
+## 🗄️ Database Schema
+
+VSeekr operates on a PostgreSQL schema secured behind strict **Row Level Security (RLS)**. The `anon` role is completely blocked; all read/write actions require an authenticated user JWT.
+
+### Database Tables Diagram
+
+```mermaid
+erDiagram
+    users ||--o{ reports : "owns"
+    users ||--o{ comments : "writes"
+    users ||--o{ activities : "notified_of"
+    users ||--|| profiles : "has_contact"
+    reports ||--o{ comments : "has"
+    reports ||--o{ activities : "references"
+```
+
+### Table Definitions
+
+#### 1. `public.users`
+* `id` (`uuid`, Primary Key, references `auth.users.id`)
+* `username` (`text`, unique)
+* `avatar_url` (`text`, nullable)
+* `points` (`integer`, default `0`)
+* `created_at` (`timestamp with time zone`)
+
+#### 2. `public.reports`
+* `id` (`uuid`, Primary Key)
+* `user_id` (`uuid`, Foreign Key references `users.id`)
+* `type` (`USER-DEFINED` - `'lost'` or `'found'`)
+* `category` (`USER-DEFINED`)
+* `status` (`USER-DEFINED` - `'active'` or `'closed'`)
+* `item_name` (`text`)
+* `description` (`text`)
+* `location_name` (`text`)
+* `latitude` (`double precision`)
+* `longitude` (`double precision`)
+* `image_urls` (`ARRAY` of `text`)
+* `created_at` (`timestamp with time zone`)
+
+#### 3. `public.comments`
+* `id` (`uuid`, Primary Key)
+* `report_id` (`uuid`, Foreign Key references `reports.id` on delete cascade)
+* `user_id` (`uuid`, Foreign Key references `users.id`)
+* `content` (`text`)
+* `created_at` (`timestamp with time zone`)
+
+#### 4. `public.activities`
+* `id` (`uuid`, Primary Key)
+* `user_id` (`uuid`, Foreign Key references `users.id` on delete cascade) — Recipient user
+* `action_type` (`USER-DEFINED` - `'created_report'`, `'resolved_report'`, `'commented'`, `'nearby_report'`)
+* `target_report_id` (`uuid`, Foreign Key references `reports.id` on delete cascade)
+* `created_at` (`timestamp with time zone`)
+
+#### 5. `public.profiles`
+* `id` (`uuid`, Primary Key, references `users.id` on delete cascade)
+* `contact_name` (`text`, nullable)
+* `contact_phone` (`text`, nullable)
+* `contact_email` (`text`, nullable)
+* `expo_push_token` (`text`, nullable)
+
+---
+
+## 🏁 Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (LTS recommended)
-- [Expo CLI](https://docs.expo.dev/more/expo-cli/)
-- A [Supabase](https://supabase.com/) project with the required tables and RLS policies
-- A Google Maps API key (for native map rendering)
+* [Node.js](https://nodejs.org/) (LTS recommended)
+* [EAS CLI](https://docs.expo.dev/build/setup/) (`npm install -g eas-cli`)
+* A Google Maps API key (for iOS/Android map SDKs)
+* A running Supabase instance
 
-### Environment Variables
-
-Create a `.env` file in the project root:
+### Environment Variables Setup
+Create a `.env` file in the root of the project:
 
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-key
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 ```
 
 ### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/JakeNLelis/VSeekr.git
+cd vseekr
+
+# Install all dependencies
 npm install
-```
-
-### Running the App
-
-```bash
-# Start the Expo dev server (clears cache)
-npx expo start -c
-```
-
-Open the app in:
-- **Expo Go** (iOS / Android) — scan the QR code
-- **Development build** — `npx expo run:android` or `npx expo run:ios`
-- **Android emulator** / **iOS simulator**
-
-### Building for Production
-
-```bash
-# Build APK / IPA via EAS
-eas build --platform android
-eas build --platform ios
 ```
 
 ---
 
-## Project Structure
+## 📜 Available Scripts
 
+Inside the project folder, you can run several scripts to develop, optimize, and test the app:
+
+| Command | Action |
+|---|---|
+| `npm run start` / `npx expo start` | Starts the Expo Metro Bundler. |
+| `npx expo start -c` | Starts the bundler and clears the system build cache. |
+| `npm run android` | Starts the bundler and runs the app on an Android emulator/device. |
+| `npm run ios` | Starts the bundler and runs the app on an iOS simulator/device. |
+| `npx expo-optimize` | Compresses and optimizes asset images to reduce binary bundle size. |
+| `npx expo lint` | Automatically scans your code for style and syntax issues. |
+
+---
+
+## 🚀 Deployment & Builds
+
+### Build a Standalone Android APK (`.apk`)
+To compile a production-ready, standalone Android APK file for direct installation (without publishing to the Google Play Store):
+
+```bash
+# Start the EAS production build via the preview profile
+eas build --platform android --profile preview
 ```
-vseekr/
-├── app/
-│   ├── _layout.tsx          # Root layout (providers, navigation stack)
-│   ├── index.tsx            # Auth gate / entry redirect
-│   ├── (auth)/              # Login, Register, Forgot & Update Password
-│   ├── (tabs)/              # Map, Feed, Report, Activity, Profile
-│   └── details/[id].tsx     # Report details screen
-├── components/
-│   ├── Map.tsx              # Native map re-export
-│   ├── Map.web.tsx          # Web map stub
-│   ├── ReportItem.tsx       # Reusable report card component
-│   └── ui/                  # Design system components (Button, Card, Chip, etc.)
-├── lib/
-│   ├── supabase.ts          # Supabase client
-│   ├── AuthProvider.tsx     # Auth context + session management
-│   ├── NotificationProvider.tsx  # Push token + in-app toast
-│   └── constants.ts         # Shared constants (categories, etc.)
-└── plugins/
-    └── withNativePatches.js # Custom Expo config plugin
+
+To compile the APK entirely on your own local environment (Android Studio + Java required) and bypass queue waiting:
+
+```bash
+eas build --platform android --profile preview --local
 ```
+
+### Publishing a GitHub Release
+When publishing a release on GitHub:
+1. Compile your production APK using the `preview` profile.
+2. Tag your commit: `git tag -a v1.0.0 -m "Release v1.0.0" && git push origin v1.0.0`
+3. Create a new release in your GitHub repository sidebar under the `v1.0.0` tag.
+4. Drag and drop the downloaded `.apk` installer file directly into the release assets card so anyone can download it immediately!
+
+---
+
+## ✍️ Authors & License
+
+* **Lead Architect:** [JakeNLelis](https://github.com/JakeNLelis)
+* Licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

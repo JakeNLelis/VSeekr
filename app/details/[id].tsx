@@ -197,7 +197,11 @@ export default function ReportDetailsScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.select({
+          ios: insets.top,
+          android: 0,
+        })}
       >
         <ScrollView>
           <View style={styles.heroWrap}>
