@@ -9,6 +9,7 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  Modal,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -47,6 +48,40 @@ export default function ReportDetailsScreen() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [contactProfile, setContactProfile] = useState<any>(null);
   const [closing, setClosing] = useState(false);
+
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportingTarget, setReportingTarget] = useState<{type: 'report' | 'comment', id: string} | null>(null);
+  const [reportCategory, setReportCategory] = useState("Spam");
+  const [reportAdditionalInfo, setReportAdditionalInfo] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const REPORT_CATEGORIES = ["Spam", "Scams/Fraud", "Inappropriate Content", "Harassment", "Irrelevant"];
+
+  const handleOpenReportModal = (type: 'report' | 'comment', id: string) => {
+    setReportingTarget({ type, id });
+    setReportCategory("Spam");
+    setReportAdditionalInfo("");
+    setReportModalVisible(true);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!reportingTarget || !session?.user) return;
+    setIsSubmittingReport(true);
+    const { error } = await supabase.from('moderation_reports').insert({
+      reporter_id: session.user.id,
+      reported_item_id: reportingTarget.id,
+      item_type: reportingTarget.type,
+      category: reportCategory,
+      additional_info: reportAdditionalInfo,
+    });
+    setIsSubmittingReport(false);
+    
+    if (error) {
+      Alert.alert("Error", "Failed to submit report: " + error.message);
+    } else {
+      Alert.alert("Report Submitted", "Thank you for keeping our community safe.");
+      setReportModalVisible(false);
+    }
+  };
 
   const fetchReportAndComments = useCallback(
     async (showLoading = false) => {
@@ -205,6 +240,11 @@ export default function ReportDetailsScreen() {
       <View style={[styles.backBtnWrapper, { top: Math.max(insets.top, 16) }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+      <View style={[styles.reportBtnWrapper, { top: Math.max(insets.top, 16) }]}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => handleOpenReportModal('report', report.id)}>
+          <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -379,9 +419,16 @@ export default function ReportDetailsScreen() {
                     c.user_id === session?.user?.id && styles.myBubble,
                   ]}
                 >
-                  <Typography variant="small" color="#b6a0ff" weight="bold">
-                    {c.user_id === session?.user?.id ? "You" : "Anonymous"}
-                  </Typography>
+                  <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <Typography variant="small" color="#b6a0ff" weight="bold">
+                      {c.user_id === session?.user?.id ? "You" : "Anonymous"}
+                    </Typography>
+                    {c.user_id !== session?.user?.id && (
+                      <TouchableOpacity onPress={() => handleOpenReportModal('comment', c.id)} style={{marginLeft: 12}}>
+                        <Ionicons name="ellipsis-horizontal" size={16} color="#767575" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                   <Typography variant="body">{c.content}</Typography>
                 </View>
               </View>
@@ -419,6 +466,42 @@ export default function ReportDetailsScreen() {
           </View>
         </SafeAreaView>
       </KeyboardAvoidingView>
+
+      <Modal visible={reportModalVisible} transparent animationType="slide" onRequestClose={() => setReportModalVisible(false)}>
+        <View style={styles.actionSheetBackdrop}>
+          <View style={styles.actionSheet}>
+            <View style={styles.actionSheetHandle} />
+            <Typography variant="h3" style={{marginBottom: 16}}>Report Content</Typography>
+            
+            <Typography variant="label">Category</Typography>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginBottom: 16}}>
+              {REPORT_CATEGORIES.map(cat => (
+                <TouchableOpacity 
+                  key={cat} 
+                  style={[styles.reportChip, reportCategory === cat && styles.reportChipActive]}
+                  onPress={() => setReportCategory(cat)}
+                >
+                  <Typography variant="small" color={reportCategory === cat ? "#fff" : "#adaaaa"}>{cat}</Typography>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Typography variant="label">Additional Information</Typography>
+            <TextInput
+              style={styles.reportInput}
+              multiline
+              placeholder="Why are you reporting this?"
+              placeholderTextColor="#767575"
+              value={reportAdditionalInfo}
+              onChangeText={setReportAdditionalInfo}
+            />
+
+            <Button title="Submit Report" onPress={handleSubmitReport} loading={isSubmittingReport} style={{marginTop: 20}} />
+            <Button title="Cancel" variant="outline" onPress={() => setReportModalVisible(false)} style={{marginTop: 10}} />
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -426,6 +509,7 @@ export default function ReportDetailsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0e0e0e" },
   backBtnWrapper: { position: "absolute", left: 16, zIndex: 10 },
+  reportBtnWrapper: { position: "absolute", right: 16, zIndex: 10 },
   backBtn: {
     width: 40,
     height: 40,
@@ -508,4 +592,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: 8,
   },
+  actionSheetBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  actionSheet: { backgroundColor: "#131313", borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingHorizontal: 24, paddingBottom: 40, paddingTop: 12, borderWidth: 1, borderColor: "#262626", borderBottomWidth: 0 },
+  actionSheetHandle: { width: 40, height: 4, backgroundColor: "#484847", borderRadius: 2, alignSelf: "center", marginBottom: 20 },
+  reportChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#262626", marginRight: 8, backgroundColor: "#1a1a1a" },
+  reportChipActive: { borderColor: "#b6a0ff", backgroundColor: "rgba(182, 160, 255, 0.1)" },
+  reportInput: { backgroundColor: "#1a1a1a", borderRadius: 12, padding: 12, color: "#fff", minHeight: 80, textAlignVertical: "top", borderWidth: 1, borderColor: "#262626" },
 });

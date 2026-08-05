@@ -29,6 +29,7 @@ export default function ProfileScreen() {
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [role, setRole] = useState('user');
   const [savingContact, setSavingContact] = useState(false);
 
   const fetchStats = useCallback(async () => {
@@ -57,13 +58,14 @@ export default function ProfileScreen() {
     if (!session?.user?.id) return;
     const { data, error } = await supabase
       .from('profiles')
-      .select('contact_name, contact_phone, contact_email')
+      .select('contact_name, contact_phone, contact_email, role')
       .eq('id', session.user.id)
       .single();
     if (!error && data) {
       setContactName(data.contact_name ?? '');
       setContactPhone(data.contact_phone ?? '');
       setContactEmail(data.contact_email ?? '');
+      setRole(data.role ?? 'user');
     }
   }, [session?.user?.id]);
 
@@ -146,6 +148,16 @@ export default function ProfileScreen() {
             color="#3fff8b"
           />
         </Card>
+
+        {role === 'admin' && (
+          <TouchableOpacity 
+            style={{flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 113, 107, 0.1)', padding: 16, borderRadius: 12, marginBottom: 32, justifyContent: 'center', borderWidth: 1, borderColor: '#ff716b'}} 
+            onPress={() => router.push('/admin')}
+          >
+            <Ionicons name="shield-checkmark" size={20} color="#ff716b" style={{marginRight: 8}} />
+            <Typography variant="body" weight="bold" color="#ff716b">Admin Dashboard</Typography>
+          </TouchableOpacity>
+        )}
 
         <Section title="Contact Details">
           <View style={styles.contactForm}>

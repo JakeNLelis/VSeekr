@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import * as Linking from 'expo-linking';
@@ -26,10 +27,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const initializedRef = useRef(false);
 
   useEffect(() => {
+    const checkBanStatus = async (userId: string) => {
+      const { data } = await supabase.from('profiles').select('is_banned').eq('id', userId).single();
+      if (data?.is_banned) {
+        Alert.alert("Account Banned", "Your account has been banned for violating community guidelines.");
+        await supabase.auth.signOut();
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setInitialized(true);
       initializedRef.current = true;
+      if (session?.user?.id) checkBanStatus(session.user.id);
     });
 
     const handleDeepLink = async (url: string | null) => {
@@ -67,6 +77,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // the token expired — redirect them to login immediately.
       if (initializedRef.current && !session) {
         router.replace('/(auth)/login');
+      } else if (session?.user?.id) {
+        checkBanStatus(session.user.id);
       }
     });
 
