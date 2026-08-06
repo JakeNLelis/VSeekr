@@ -43,6 +43,12 @@ Built with **Expo (React Native)** and powered by **Supabase**.
 * **Contact Information:** Store and update your default name, email, and phone number to automatically share with others when you post a **Found** item.
 * **Personal Statistics:** Track active lost/found items submitted.
 
+### 🤖 Smart AI Matching & Moderation
+* **AI Image Recognition:** Powered by Google Gemini via Edge Functions. When an item is found, the AI actively compares its images against lost reports, instantly notifying owners if there's a visual match!
+* **Community Moderation:** Users can seamlessly report suspicious posts or comments.
+* **Admin Dashboard:** Dedicated in-app hub for admins to review the moderation queue, verify violations, and promote users.
+* **Automated Strikes System:** 5 confirmed violations lead to an automatic, system-enforced account ban.
+
 ---
 
 ## 🛠️ Tech Stack
@@ -53,6 +59,7 @@ Built with **Expo (React Native)** and powered by **Supabase**.
 | **Routing & Navigation** | Expo Router v6 (File-based navigation) |
 | **Backend & Database** | Supabase (Postgres, Realtime engine, JWT Auth, Object Storage) |
 | **Serverless Integration** | Supabase Edge Functions (Deno Deploy) |
+| **AI Integration** | Google Gemini API (`gemini-1.5-flash`) |
 | **Maps & Geolocations** | `react-native-maps` with Google Maps SDK |
 | **Push Notifications** | `expo-notifications` + Expo Push Notification service |
 | **Local Persistence** | `@react-native-async-storage/async-storage` |
@@ -176,6 +183,9 @@ Create a `.env` file in the root of the project:
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
 EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+
+# Required for Edge Functions (Deploy via Supabase CLI/Dashboard)
+GEMINI_API_KEY=your-google-gemini-api-key
 ```
 
 ### Installation
@@ -231,7 +241,8 @@ When publishing a release on GitHub:
 
 ---
 
-## ✍️ Authors & License
+## ✍️ Authors, Policies & License
 
 * **Lead Architect:** [JakeNLelis](https://github.com/JakeNLelis)
+* **Privacy Policy:** Read how we protect your data in our [Privacy Policy](privacy_policy.md).
 * Licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
