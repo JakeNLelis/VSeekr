@@ -26,7 +26,10 @@ We use your information to:
     *   **Google Gemini API:** For processing and comparing item images to find matches.
 
 ## 4. Data Security & Retention
-Your data is securely stored using Supabase's Row Level Security (RLS) to ensure that only authorized users can access or modify specific information. You can delete your account at any time through the app settings, which will permanently remove your profile and associated data from our active database.
+Your data is securely stored using Supabase's Row Level Security (RLS) to ensure that only authorized users can access or modify specific information. 
+
+**Account Deletion:** You can delete your account and all associated data at any time through the app's Profile settings. 
+**Web Deletion Request:** If you no longer have the app installed and wish to request the deletion of your account and all associated data, please email us at jake.lelis05@gmail.com with the subject "Account Deletion Request" from the email address associated with your account. We will process your deletion request within 14 days.
 
 ## 5. Contact Us
-If you have any questions or concerns about this Privacy Policy, please contact us.
+If you have any questions, concerns, or data deletion requests regarding this Privacy Policy, please contact us at jake.lelis05@gmail.com.
